@@ -1,29 +1,13 @@
 # Hermes Termux Skills
 
-> Termux/Android 环境下 Hermes Agent 的避坑指南
+> Termux/Android 环境下的 Hermes Agent Skills 集合
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Hermes](https://img.shields.io/badge/Hermes-v0.20.5-purple)](https://github.com/NousResearch/hermes-agent)
 
 ---
 
-## 安装
-
-```bash
-# 1. 锁定 Python（Hermes 需要 <3.14）
-apt-mark hold python && apt-mark hold python-ensurepip-wheels
-
-# 2. 安装 uv
-pkg install uv
-
-# 3. 创建 venv
-uv venv venv --python /data/data/com.termux/files/usr/bin/python3.13 --system-site-packages --seed
-
-# 4. 安装 Hermes
-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
-```
-
-## Skills 列表
+## Skills
 
 ### termux — Termux/Android 环境指南
 
@@ -31,7 +15,6 @@ curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 
 **安装：**
 ```bash
-# 将 skills 目录复制到 Hermes skills 目录
 cp -r skills/termux ~/.hermes/skills/
 ```
 
