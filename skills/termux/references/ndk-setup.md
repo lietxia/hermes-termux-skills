@@ -1,67 +1,69 @@
-# NDK Setup on Termux (ARM64)
+# NDK Setup on Termux
 
-Google does not publish an ARM64-host NDK. The clang inside the official NDK archive
-is an x86_64 ELF, so it cannot run on aarch64 Termux. Use a community NDK built for
-Android/Bionic.
+Google's official NDK only has x86_64 Linux binaries. On Termux (ARM64), use lzhiyong's termux-ndk.
 
-## Use lzhiyong/termux-ndk
-
-[lzhiyong/termux-ndk](https://github.com/lzhiyong/termux-ndk) ships a musl-static
-aarch64 clang that runs on Termux. This is the recommended source.
+## Installation
 
 ```bash
-# Fetch the release for the NDK version your project pins, e.g. r29.
-# Extract under $ANDROID_HOME/ndk/<version>/ so AGP finds it by name.
-ls -d "$ANDROID_HOME"/ndk/*/
+yes | pkg install p7zip
+curl --http1.1 -L -o ~/termux-ndk-r29.7z "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r29-aarch64.7z"
+7z x ~/termux-ndk-r29.7z -y -o~/termux-ndk
+mv ~/termux-ndk/android-ndk-r29 ~/android-sdk/ndk/29.0.14206865
 ```
 
-Do **not** use `SnowNF/ndk-aarch64-linux`: it is built against glibc (its release
-notes say "aarch64 gnu/linux") and needs `/lib/ld-linux-aarch64.so.1`, which Bionic
-does not provide. The same applies to `Commit451/android-arm-build-tools`.
+## Symlink Trick
 
-## Redirect AGP's auto-download with a symlink
-
-AGP asks for a specific NDK version. If the exact version is missing, symlink the one
-you have to the name AGP expects:
+If Gradle auto-downloads NDK 27 (x86_64), redirect it:
 
 ```bash
-cd "$ANDROID_HOME/ndk"
-ln -sfn 29.0.14206865 27.0.12077973
+cd ~/android-sdk/ndk
+rm -rf 27.0.12077973
+ln -sf 29.0.14206865 27.0.12077973
 ```
 
-Then confirm the toolchain resolves:
+## CMake/Ninja
 
-```bash
-"$ANDROID_HOME/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" --version
-```
-
-The `linux-x86_64` directory name is upstream's and is misleading — the binary inside
-is aarch64. Check with `readelf -h` if unsure.
-
-## CMake and Ninja
+SDK's cmake is x86_64. Use Termux native:
 
 ```bash
 pkg install cmake ninja
-ln -sf "$PREFIX/bin/cmake" "$ANDROID_HOME/cmake/3.22.1/bin/cmake"
-ln -sf "$PREFIX/bin/ninja" "$ANDROID_HOME/cmake/3.22.1/bin/ninja"
+rm -rf $ANDROID_HOME/cmake/3.22.1/bin/*
+ln -sf /data/data/com.termux/files/usr/bin/cmake $ANDROID_HOME/cmake/3.22.1/bin/cmake
+ln -sf /data/data/com.termux/files/usr/bin/ninja $ANDROID_HOME/cmake/3.22.1/bin/ninja
 ```
 
-## gradle.properties
-
-```properties
-android.ndkVersion=29.0.14206865
-```
-
-## Verify
+## Protobuf Fix
 
 ```bash
-readelf -h "$ANDROID_HOME/ndk/29.0.14206865/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" | grep Machine
-# AArch64 — good.
+pkg install protobuf
+# In build.gradle.kts:
+# protobuf { protoc { path = "/data/data/com.termux/files/usr/bin/protoc" } }
 ```
 
-## When you do not need the NDK
+**PITFALL**: Maven-downloaded protoc is x86_64 — won't run on Termux. Always use system protoc via `path`.
 
-If the project has no C/C++ or Rust code, leave the NDK alone. Several large Android
-projects can be built with the native modules disabled — see
-[native-build-tasks.md](native-build-tasks.md) and
-[haven-native-modules.md](haven-native-modules.md).
+## Verification
+
+```bash
+# Check NDK
+~/android-sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/linux-x86_64/bin/clang --version
+# Should show: aarch64-unknown-linux-musl target
+```
+
+## Cross-Compiling for Non-Android Linux (armv7l)
+
+When you need a static binary for a Linux ARM device (IoT, router, ONT), use the NDK's x86_64 clang with its sysroot. Termux's own clang lacks the armv7l runtime libraries.
+
+```bash
+# Cross-compile a static armv7l binary for Linux
+NDK=~/android-sdk/ndk/29.0.14206865/toolchains/llvm/prebuilt/linux-x86_64
+$NDK/bin/clang \
+  --sysroot=$NDK/sysroot \
+  --target=armv7a-linux-androideabi21 \
+  -static -O2 \
+  -o output_binary source.c
+```
+
+**PITFALL**: Termux clang (`/data/data/com.termux/files/usr/bin/clang`) does NOT work for cross-compiling — its bundled `libclang_rt.builtins.a` is aarch64-only. Always use the NDK's clang binary.
+
+**PITFALL**: The Android bionic libc headers work for static Linux binaries because the ABI is compatible at the syscall level. No musl/glibc sysroot needed for simple exploits or tools.

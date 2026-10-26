@@ -1,8 +1,8 @@
 ---
 name: termux
-description: Termux/Android pitfalls, SDK, and Hermes setup on ARM64.
-version: 10.0.0
-author: lietxia, Hermes Agent
+description: "Termux/Android pitfalls, SDK, and Hermes setup on ARM64. Use when: running on Termux, building Android on ARM64, Python venv issues, Termux-specific errors, hermes update fails, gateway restart, psutil on Android."
+version: 11.0.0
+author: lietxia
 license: MIT
 metadata:
   hermes:
@@ -25,6 +25,13 @@ Load this skill when the task involves any of:
 - `Exec format error`, `cannot execute: required file not found`, Bionic-vs-glibc failures
 - `apt` / `pkg` failing on Android 16
 - A dependency gated only to `linux` failing because `sys.platform == "android"`
+- Python 3.14 / venv issues on Termux
+- `hermes update` failing or needing bypass
+- Gateway restart on Termux
+- armv7l cross-compilation
+- File transfer to BusyBox devices
+- Router firmware flashing (OpenWrt / Padavan)
+- Termux mirror switching
 
 ## Prerequisites
 
@@ -133,3 +140,7 @@ bash scripts/verify-arm64-sdk.sh
 - [vTerm/Haven migration](references/haven-vterm-migration.md)
 - [Haven build config](references/haven-build.md)
 - [Haven native modules](references/haven-native-modules.md)
+- [armv7l cross-compile](references/armv7l-cross-compile.md) — static armv7l binaries on Termux
+- [BusyBox file transfer](references/file-transfer-to-busybox-devices.md) — push binaries to embedded devices
+- [Router firmware flashing](references/router-firmware-flashing.md) — OpenWrt, Padavan, Breed
+- [Termux mirrors](references/termux-mirrors.md) — switch to Chinese mirrors
